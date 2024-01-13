@@ -1,5 +1,9 @@
 # Dependencies
+(If problems, downgrade python version from 3.12 to 3.11)  
 
 ## Arcade
-(If problem, retrograde from 3.12 to 3.11)  
+
 `pip install arcade` 
+
+## Matplotlib
+`pip install matplotlib`
