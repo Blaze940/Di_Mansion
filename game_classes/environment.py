@@ -1,10 +1,14 @@
 import arcade
 from game_configs import base_settings
 
-class GameMap:
-    def __init__(self,str_map):
+
+class Environment:
+    def __init__(self, str_map):
         row, col = 0, 0
         self.map = {}
+        self.start = (13, 6)
+        self.targets = None
+        self.protection = None
         for line in str_map.strip().split('\n'):
             for char in line:
                 self.map[row, col] = char
