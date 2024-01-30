@@ -1,8 +1,8 @@
 
 # GAME
 GAME_NAME = 'DiMansion'
-GAME_WINDOW_WIDTH = 13
-GAME_WINDOW_HEIGHT = 15
+GAME_WINDOW_WIDTH = 15
+GAME_WINDOW_HEIGHT = 14
 
 
 # REWARD
@@ -16,7 +16,7 @@ REWARD_ENEMY_KILLED = 200
 REWARD_STAGE_CLEAR = 1000
 
 # MAP
-MAP_DIMENSION = [14,12]
+MAP_DIMENSION = [11,12]
 MAP_START_AGENT = '.'
 MAP_ENEMY = '-'
 MAP_PROTECTION = '@'
@@ -38,21 +38,21 @@ MOVES = {ACTION_LEFT: (-1, 0),
 SPRITE_SCALE = 0.4
 SPRITE_SIZE = int(SPRITE_SCALE * 128)
 
+
 # MAP LEVELS
 MAP_LEVEL_BEGINNER = """
-#############    
-#  -------  #
-#  -------  #
-#  -------  #
-#  -------  #
-#  -------  #
-#           #
-#           #
-#           #
-#           #
-#           #
-# @ @ @ @ @ #
-#           #
-#     .     #
-#############     
+###############    
+#   -------   #
+#   -------   #
+#   -------   #
+#   -------   #
+#   -------   #
+#             #
+#             #
+#             #
+#             #
+#  @ @ @ @ @  #
+#             #
+#      .      #
+###############     
 """

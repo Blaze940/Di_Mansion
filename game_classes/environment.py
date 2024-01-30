@@ -4,6 +4,7 @@ from game_configs import base_settings
 
 class Environment:
     def __init__(self, str_map):
+        global line
         row, col = 0, 0
         self.map = {}
         self.start = (13, 6)

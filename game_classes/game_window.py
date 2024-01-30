@@ -1,15 +1,42 @@
 import arcade
 from game_configs import base_settings
+import random
+
+BULLET_SPEED = 5
+ENEMY_SPEED = 2
+
+MAX_PLAYER_BULLETS = 3
+
+# This margin controls how close the enemy gets to the left or right side
+# before reversing direction.
+ENEMY_VERTICAL_MARGIN = 15
+RIGHT_ENEMY_BORDER = base_settings.GAME_WINDOW_WIDTH - ENEMY_VERTICAL_MARGIN
+LEFT_ENEMY_BORDER = ENEMY_VERTICAL_MARGIN
+SPRITE_SCALING_LASER = 0.8
+# How many pixels to move the enemy down when reversing
+ENEMY_MOVE_DOWN_AMOUNT = 30
+
+# Game state
+GAME_OVER = 1
+PLAY_GAME = 0
+
 
 class GameWindow(arcade.Window):
     def __init__(self, agent):
-        super().__init__(base_settings.GAME_WINDOW_WIDTH * base_settings.SPRITE_SIZE, base_settings.GAME_WINDOW_HEIGHT * base_settings.SPRITE_SIZE, base_settings.GAME_NAME)
+        super().__init__(base_settings.GAME_WINDOW_WIDTH * base_settings.SPRITE_SIZE,
+                         base_settings.GAME_WINDOW_HEIGHT * base_settings.SPRITE_SIZE, base_settings.GAME_NAME)
         self.enemies = None
+        self.enemies_bullets = None
         self.protections = None
         self.walls = None
         self.player = None
+        self.player_bullets = None
         self.env = agent.env
         self.agent = agent
+        self.game_state = PLAY_GAME
+        self.score = 0
+        self.enemy_change_x = -ENEMY_SPEED
+
     def state_to_xy(self, state):
         return (state[1] + 0.5) * base_settings.SPRITE_SIZE, \
                (self.env.height - state[0] - 0.5) * base_settings.SPRITE_SIZE
@@ -19,31 +46,188 @@ class GameWindow(arcade.Window):
         self.protections = arcade.SpriteList()
         self.enemies = arcade.SpriteList()
         self.player = arcade.Sprite(":resources:images/enemies/bee.png", base_settings.SPRITE_SCALE)
-
-        for row in range(self.env.height):
-            for col in range(self.env.width):
-                if self.env.map[row, col] == base_settings.MAP_WALL:
-                    sprite = arcade.Sprite(":resources:images/tiles/boxCrate_double.png", base_settings.SPRITE_SCALE)
-                    sprite.center_x, sprite.center_y = self.state_to_xy((row, col))
-                    self.walls.append(sprite)
-                elif self.env.map[row, col] == base_settings.MAP_PROTECTION:
-                    sprite = arcade.Sprite(":resources:images/tiles/boxCrate_single.png", base_settings.SPRITE_SCALE)
-                    sprite.center_x, sprite.center_y = self.state_to_xy((row, col))
-                    self.protections.append(sprite)
-                elif self.env.map[row, col] == base_settings.MAP_ENEMY:
-                    sprite = arcade.Sprite(":resources:images/enemies/slimeBlock.png", base_settings.SPRITE_SCALE)
-                    sprite.center_x, sprite.center_y = self.state_to_xy((row, col))
-                    self.enemies.append(sprite)
+        self.game_state = PLAY_GAME
+        self.enemies_bullets = arcade.SpriteList()
+        self.player_bullets = arcade.SpriteList()
+        self.score = 0
+        for state in self.env.map:
+            if self.env.map[state] == base_settings.MAP_WALL:
+                sprite = arcade.Sprite(":resources:images/tiles/boxCrate_double.png", base_settings.SPRITE_SCALE)
+                sprite.center_x, sprite.center_y = self.state_to_xy(state)
+                self.walls.append(sprite)
+            elif self.env.map[state] == base_settings.MAP_PROTECTION:
+                self.build_protection(self.state_to_xy(state))
+            elif self.env.map[state] == base_settings.MAP_ENEMY:
+                sprite = arcade.Sprite(":resources:images/enemies/slimeBlock.png", base_settings.SPRITE_SCALE)
+                sprite.center_x, sprite.center_y = self.state_to_xy(state)
+                self.enemies.append(sprite)
 
         self.update_player()
 
+    def build_protection(self, state):
+        x_start, y_start = int(state[0]), int(state[1])
+        shield_block_width = 10
+        shield_block_height = 10
+        shield_width_count = 5
+        shield_height_count = 5
+        for x in range(x_start,
+                       x_start + shield_width_count * shield_block_width,
+                       shield_block_width):
+            for y in range(y_start,
+                           y_start + shield_height_count * shield_block_height,
+                           shield_block_height):
+                shield_sprite = arcade.SpriteSolidColor(shield_block_width,
+                                                        shield_block_height,
+                                                        arcade.color.WHITE)
+                shield_sprite.center_x = x
+                shield_sprite.center_y = y
+                self.protections.append(shield_sprite)
+
     def on_draw(self):
+        self.clear()
         arcade.start_render()
         self.walls.draw()
         self.protections.draw()
         self.enemies.draw()
         self.player.draw()
+        self.enemies_bullets.draw()
+        self.player_bullets.draw()
+        arcade.draw_text(f"Score: {self.score}", 10, 20, arcade.color.WHITE, 14)
 
+        if self.game_state == GAME_OVER:
+            arcade.draw_text("GAME OVER", 250, 300, arcade.color.WHITE, 55)
 
     def update_player(self):
         self.player.center_x, self.player.center_y = self.state_to_xy(self.agent.state)
+
+    def update_enemies(self):
+
+        # Move the enemy vertically
+        for enemy in self.enemies:
+            enemy.center_x += self.enemy_change_x
+
+        # Check every enemy to see if any hit the edge. If so, reverse the
+        # direction and flag to move down.
+        move_down = False
+        for enemy in self.enemies:
+            if enemy.right > RIGHT_ENEMY_BORDER and self.enemy_change_x > 0:
+                self.enemy_change_x *= -1
+                move_down = True
+            if enemy.left < LEFT_ENEMY_BORDER and self.enemy_change_x < 0:
+                self.enemy_change_x *= -1
+                move_down = True
+
+        # Did we hit the edge above, and need to move t he enemy down?
+        if move_down:
+            # Yes
+            for enemy in self.enemies:
+                # Move enemy down
+                enemy.center_y -= ENEMY_MOVE_DOWN_AMOUNT
+
+    def allow_enemies_to_fire(self):
+        """
+        See if any enemies will fire this frame.
+        """
+        # Track which x values have had a chance to fire a bullet.
+        # Since enemy list is build from the bottom up, we can use
+        # this to only allow the bottom row to fire.
+        x_spawn = []
+        for enemy in self.enemies:
+            # Adjust the chance depending on the number of enemies. Fewer
+            # enemies, more likely to fire.
+            chance = 4 + len(self.enemies) * 4
+
+            # Fire if we roll a zero, and no one else in this column has had
+            # a chance to fire.
+            if random.randrange(chance) == 0 and enemy.center_x not in x_spawn:
+                # Create a bullet
+                bullet = arcade.Sprite(":resources:images/space_shooter/laserRed01.png", SPRITE_SCALING_LASER)
+
+                # Angle down.
+                bullet.angle = 180
+
+                # Give the bullet a speed
+                bullet.change_y = -BULLET_SPEED
+
+                # Position the bullet so its top id right below the enemy
+                bullet.center_x = enemy.center_x
+                bullet.top = enemy.bottom
+
+                # Add the bullet to the appropriate list
+                self.enemies_bullets.append(bullet)
+
+            # Ok, this column has had a chance to fire. Add to list so we don't
+            # try it again this frame.
+            x_spawn.append(enemy.center_x)
+
+    def process_enemy_bullets(self):
+
+        # Move the bullets
+        self.enemies_bullets.update()
+
+        # Loop through each bullet
+        for bullet in self.enemies_bullets:
+            # Check this bullet to see if it hit a shield
+            hit_list = arcade.check_for_collision_with_list(bullet, self.protections)
+
+            # If it did, get rid of the bullet and shield blocks
+            if len(hit_list) > 0:
+                bullet.remove_from_sprite_lists()
+                for shield in hit_list:
+                    shield.remove_from_sprite_lists()
+                continue
+
+            # See if the player got hit with a bullet
+            if arcade.check_for_collision_with_list(self.player, self.enemies_bullets):
+                self.game_state = GAME_OVER
+
+            # If the bullet falls off the screen get rid of it
+            if bullet.top < 0:
+                bullet.remove_from_sprite_lists()
+
+    def process_player_bullets(self):
+
+        # Move the bullets
+        self.player_bullets.update()
+
+        # Loop through each bullet
+        for bullet in self.player_bullets:
+
+            # Check this bullet to see if it hit a enemy
+            hit_list = arcade.check_for_collision_with_list(bullet, self.shield_list)
+            # If it did, get rid of the bullet
+            if len(hit_list) > 0:
+                bullet.remove_from_sprite_lists()
+                for shield in hit_list:
+                    shield.remove_from_sprite_lists()
+                continue
+
+            # Check this bullet to see if it hit a enemy
+            hit_list = arcade.check_for_collision_with_list(bullet, self.enemy_list)
+
+            # If it did, get rid of the bullet
+            if len(hit_list) > 0:
+                bullet.remove_from_sprite_lists()
+
+            # For every enemy we hit, add to the score and remove the enemy
+            for enemy in hit_list:
+                enemy.remove_from_sprite_lists()
+                self.score += 1
+
+                # Hit Sound
+                arcade.play_sound(self.hit_sound)
+
+            # If the bullet flies off-screen, remove it.
+            if bullet.bottom > base_settings.GAME_WINDOW_WIDTH * base_settings.SPRITE_SIZE:
+                bullet.remove_from_sprite_lists()
+
+    def on_update(self, delta_time):
+        """ Movement and game logic """
+
+        if self.game_state == GAME_OVER:
+            return
+
+        self.update_enemies()
+        self.allow_enemies_to_fire()
+        self.process_enemy_bullets()
+        self.process_player_bullets()
