@@ -181,23 +181,31 @@ class GameWindow(arcade.Window):
             if bullet.top < 0:
                 bullet.remove_from_sprite_lists()
 
-    def player_shoot(self):
-        # Create a bullet
-        bullet = arcade.Sprite(":resources:images/space_shooter/laserBlue01.png", SPRITE_SCALING_LASER)
+    def on_mouse_press(self, x, y, button, modifiers):
+        """
+        Called whenever the mouse button is clicked.
+        """
 
-        # The image points to the right, and we want it to point up. So
-        # rotate it.
-        bullet.angle = 90
+        # Only allow the user so many bullets on screen at a time to prevent
+        # them from spamming bullets.
+        if len(self.player_bullets) < MAX_PLAYER_BULLETS:
 
-        # Give the bullet a speed
-        bullet.change_y = BULLET_SPEED
+            # Create a bullet
+            bullet = arcade.Sprite(":resources:images/space_shooter/laserBlue01.png", SPRITE_SCALING_LASER)
 
-        # Position the bullet
-        bullet.center_x = self.player_sprite.center_x
-        bullet.bottom = self.player_sprite.top
+            # The image points to the right, and we want it to point up. So
+            # rotate it.
+            bullet.angle = 90
 
-        # Add the bullet to the appropriate lists
-        self.player_bullet_list.append(bullet)
+            # Give the bullet a speed
+            bullet.change_y = BULLET_SPEED
+
+            # Position the bullet
+            bullet.center_x = self.player.center_x
+            bullet.bottom = self.player.top
+
+            # Add the bullet to the appropriate lists
+            self.player_bullets.append(bullet)
 
     def process_player_bullets(self):
 
@@ -208,7 +216,7 @@ class GameWindow(arcade.Window):
         for bullet in self.player_bullets:
 
             # Check this bullet to see if it hit a enemy
-            hit_list = arcade.check_for_collision_with_list(bullet, self.shield_list)
+            hit_list = arcade.check_for_collision_with_list(bullet, self.protections)
             # If it did, get rid of the bullet
             if len(hit_list) > 0:
                 bullet.remove_from_sprite_lists()
@@ -217,7 +225,7 @@ class GameWindow(arcade.Window):
                 continue
 
             # Check this bullet to see if it hit a enemy
-            hit_list = arcade.check_for_collision_with_list(bullet, self.enemy_list)
+            hit_list = arcade.check_for_collision_with_list(bullet, self.enemies)
 
             # If it did, get rid of the bullet
             if len(hit_list) > 0:

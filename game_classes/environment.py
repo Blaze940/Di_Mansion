@@ -39,7 +39,6 @@ class Environment:
         return state, reward
 
     def is_not_allowed(self, state):
-        print("self.map[state] = ", self.map[state])
         return state not in self.map or self.map[state] == base_settings.MAP_WALL
 
     def shoot(self):
