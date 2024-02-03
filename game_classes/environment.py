@@ -23,3 +23,24 @@ class Environment:
 
         self.height = row
         self.width = len(line)
+
+    def do(self, state, action):
+        move = base_settings.MOVES[action]
+        new_state = (state[0] + move[0], state[1] + move[1])
+        if self.is_not_allowed(new_state):
+            reward = base_settings.REWARD_WALL
+        else:
+            state = new_state
+            reward = base_settings.REWARD_LIFE_LOST = -100
+
+        if action == "S":
+            self.shoot()
+
+        return state, reward
+
+    def is_not_allowed(self, state):
+        print("self.map[state] = ", self.map[state])
+        return state not in self.map or self.map[state] == base_settings.MAP_WALL
+
+    def shoot(self):
+        return

@@ -1,4 +1,5 @@
 from game_configs import base_settings
+from random import *
 
 
 class Agent:
@@ -24,3 +25,30 @@ class Agent:
         self.state = self.env.start
         self.score = 0
         self.iteration = 0
+
+    def best_action(self):
+        if random() < self.noise:
+            return choice(base_settings.ACTIONS)
+        else:
+            return arg_max(self.qtable[self.state])
+
+    def do(self):
+        action = self.best_action()
+        new_state, reward = self.env.do(self.state, action)
+        self.score += reward
+        self.iteration += 1
+        # Q-learning
+        self.qtable[self.state][action] += reward
+        maxQ = max(self.qtable[new_state].values())
+        delta = self.learning_rate * (reward + self.discount_factor * maxQ - self.qtable[self.state][action])
+        self.qtable[self.state][action] += delta
+        self.state = new_state
+
+        if self.state == self.env.targets:
+            self.history.append(self.score)
+            self.noise *= 1 - 1E-1
+
+        return action, reward
+
+def arg_max(table):
+    return max(table, key=table.get)

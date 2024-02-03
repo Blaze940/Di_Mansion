@@ -94,11 +94,8 @@ class GameWindow(arcade.Window):
         self.player_bullets.draw()
         arcade.draw_text(f"Score: {self.score}", 10, 20, arcade.color.WHITE, 14)
 
-        if self.game_state == GAME_OVER:
-            arcade.draw_text("GAME OVER", 250, 300, arcade.color.WHITE, 55)
-
-    def update_player(self):
-        self.player.center_x, self.player.center_y = self.state_to_xy(self.agent.state)
+        # if self.game_state == GAME_OVER:
+        # arcade.draw_text("GAME OVER", 250, 300, arcade.color.WHITE, 55)
 
     def update_enemies(self):
         # Move the enemy vertically
@@ -184,6 +181,24 @@ class GameWindow(arcade.Window):
             if bullet.top < 0:
                 bullet.remove_from_sprite_lists()
 
+    def player_shoot(self):
+        # Create a bullet
+        bullet = arcade.Sprite(":resources:images/space_shooter/laserBlue01.png", SPRITE_SCALING_LASER)
+
+        # The image points to the right, and we want it to point up. So
+        # rotate it.
+        bullet.angle = 90
+
+        # Give the bullet a speed
+        bullet.change_y = BULLET_SPEED
+
+        # Position the bullet
+        bullet.center_x = self.player_sprite.center_x
+        bullet.bottom = self.player_sprite.top
+
+        # Add the bullet to the appropriate lists
+        self.player_bullet_list.append(bullet)
+
     def process_player_bullets(self):
 
         # Move the bullets
@@ -213,9 +228,6 @@ class GameWindow(arcade.Window):
                 enemy.remove_from_sprite_lists()
                 self.score += 1
 
-                # Hit Sound
-                arcade.play_sound(self.hit_sound)
-
             # If the bullet flies off-screen, remove it.
             if bullet.bottom > base_settings.GAME_WINDOW_WIDTH * base_settings.SPRITE_SIZE:
                 bullet.remove_from_sprite_lists()
@@ -223,10 +235,12 @@ class GameWindow(arcade.Window):
     def on_update(self, delta_time):
         """ Movement and game logic """
 
-        if self.game_state == GAME_OVER:
-            return
-
+        self.agent.do()
         self.update_enemies()
         self.allow_enemies_to_fire()
         self.process_enemy_bullets()
         self.process_player_bullets()
+        self.update_player()
+
+    def update_player(self):
+        self.player.center_x, self.player.center_y = self.state_to_xy(self.agent.state)

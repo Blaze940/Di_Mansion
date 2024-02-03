@@ -1,8 +1,3 @@
-import arcade
-import random
-import matplotlib.pyplot as plt
-import pickle
-from os.path import exists
 
 from game_classes.environment import Environment
 from game_configs import base_settings
