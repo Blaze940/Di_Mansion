@@ -10,8 +10,8 @@ MAX_PLAYER_BULLETS = 3
 # This margin controls how close the enemy gets to the left or right side
 # before reversing direction.
 ENEMY_VERTICAL_MARGIN = 15
-RIGHT_ENEMY_BORDER = base_settings.GAME_WINDOW_WIDTH - ENEMY_VERTICAL_MARGIN
-LEFT_ENEMY_BORDER = ENEMY_VERTICAL_MARGIN
+RIGHT_ENEMY_BORDER = (base_settings.GAME_WINDOW_WIDTH - 1) * base_settings.SPRITE_SIZE
+LEFT_ENEMY_BORDER = base_settings.SPRITE_SIZE
 SPRITE_SCALING_LASER = 0.8
 # How many pixels to move the enemy down when reversing
 ENEMY_MOVE_DOWN_AMOUNT = 30
@@ -101,7 +101,6 @@ class GameWindow(arcade.Window):
         self.player.center_x, self.player.center_y = self.state_to_xy(self.agent.state)
 
     def update_enemies(self):
-
         # Move the enemy vertically
         for enemy in self.enemies:
             enemy.center_x += self.enemy_change_x
