@@ -32,9 +32,9 @@ class Agent:
         else:
             return arg_max(self.qtable[self.state])
 
-    def do(self):
+    def do(self, type_of_shoot):
         action = self.best_action()
-        new_state, reward = self.env.do(self.state, action)
+        new_state, reward = self.env.do(self.state, action, type_of_shoot)
         self.score += reward
         self.iteration += 1
         # Q-learning
@@ -47,8 +47,8 @@ class Agent:
         if self.state == self.env.targets:
             self.history.append(self.score)
             self.noise *= 1 - 1E-1
-
-        return action, reward
+        print("ACTION", action)
+        return action
 
 def arg_max(table):
     return max(table, key=table.get)

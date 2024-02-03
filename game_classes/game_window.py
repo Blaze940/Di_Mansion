@@ -36,6 +36,7 @@ class GameWindow(arcade.Window):
         self.game_state = PLAY_GAME
         self.score = 0
         self.enemy_change_x = -ENEMY_SPEED
+        self.REWARD = ""
 
     def state_to_xy(self, state):
         return (state[1] + 0.5) * base_settings.SPRITE_SIZE, \
@@ -181,15 +182,8 @@ class GameWindow(arcade.Window):
             if bullet.top < 0:
                 bullet.remove_from_sprite_lists()
 
-    def on_mouse_press(self, x, y, button, modifiers):
-        """
-        Called whenever the mouse button is clicked.
-        """
-
-        # Only allow the user so many bullets on screen at a time to prevent
-        # them from spamming bullets.
+    def player_shoot(self):
         if len(self.player_bullets) < MAX_PLAYER_BULLETS:
-
             # Create a bullet
             bullet = arcade.Sprite(":resources:images/space_shooter/laserBlue01.png", SPRITE_SCALING_LASER)
 
@@ -222,6 +216,7 @@ class GameWindow(arcade.Window):
                 bullet.remove_from_sprite_lists()
                 for shield in hit_list:
                     shield.remove_from_sprite_lists()
+                    self.REWARD = "PROTECTION"
                 continue
 
             # Check this bullet to see if it hit a enemy
@@ -230,6 +225,7 @@ class GameWindow(arcade.Window):
             # If it did, get rid of the bullet
             if len(hit_list) > 0:
                 bullet.remove_from_sprite_lists()
+                self.REWARD = "KILL"
 
             # For every enemy we hit, add to the score and remove the enemy
             for enemy in hit_list:
@@ -243,7 +239,11 @@ class GameWindow(arcade.Window):
     def on_update(self, delta_time):
         """ Movement and game logic """
 
-        self.agent.do()
+        action = self.agent.do("")
+        if action == "S":
+            self.player_shoot()
+            self.agent.do(self.REWARD)
+
         self.update_enemies()
         self.allow_enemies_to_fire()
         self.process_enemy_bullets()
