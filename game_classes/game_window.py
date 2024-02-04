@@ -5,7 +5,7 @@ import random
 BULLET_SPEED = 5
 ENEMY_SPEED = 2
 
-MAX_PLAYER_BULLETS = 3
+MAX_PLAYER_BULLETS = 5
 
 # This margin controls how close the enemy gets to the left or right side
 # before reversing direction.
@@ -36,7 +36,7 @@ class GameWindow(arcade.Window):
         self.game_state = PLAY_GAME
         self.score = 0
         self.enemy_change_x = -ENEMY_SPEED
-        self.REWARD = ""
+        self.EVENT = ""
 
     def state_to_xy(self, state):
         return (state[1] + 0.5) * base_settings.SPRITE_SIZE, \
@@ -110,9 +110,11 @@ class GameWindow(arcade.Window):
             if enemy.right > RIGHT_ENEMY_BORDER and self.enemy_change_x > 0:
                 self.enemy_change_x *= -1
                 move_down = True
+                self.EVENT = "ENEMIES_MOVE_DOWN"
             if enemy.left < LEFT_ENEMY_BORDER and self.enemy_change_x < 0:
                 self.enemy_change_x *= -1
                 move_down = True
+                self.EVENT = "ENEMIES_MOVE_DOWN"
 
         # Did we hit the edge above, and need to move t he enemy down?
         if move_down:
@@ -177,7 +179,7 @@ class GameWindow(arcade.Window):
             # See if the player got hit with a bullet
             if arcade.check_for_collision_with_list(self.player, self.enemies_bullets):
                 self.game_state = GAME_OVER
-
+                self.EVENT = "DIED"
             # If the bullet falls off the screen get rid of it
             if bullet.top < 0:
                 bullet.remove_from_sprite_lists()
@@ -216,7 +218,7 @@ class GameWindow(arcade.Window):
                 bullet.remove_from_sprite_lists()
                 for shield in hit_list:
                     shield.remove_from_sprite_lists()
-                    self.REWARD = "PROTECTION"
+                    self.EVENT = "SHOOT_PROTECTION"
                 continue
 
             # Check this bullet to see if it hit a enemy
@@ -225,7 +227,7 @@ class GameWindow(arcade.Window):
             # If it did, get rid of the bullet
             if len(hit_list) > 0:
                 bullet.remove_from_sprite_lists()
-                self.REWARD = "KILL"
+                self.EVENT = "KILL_ENEMY"
 
             # For every enemy we hit, add to the score and remove the enemy
             for enemy in hit_list:
@@ -238,11 +240,14 @@ class GameWindow(arcade.Window):
 
     def on_update(self, delta_time):
         """ Movement and game logic """
-
+        self.EVENT = ""
         action = self.agent.do("")
+        if self.EVENT in ["DIED", "ENEMIES_MOVE_DOWN"]:
+            self.agent.do(self.EVENT)
+
         if action == "S":
             self.player_shoot()
-            self.agent.do(self.REWARD)
+            self.agent.do(self.EVENT)
 
         self.update_enemies()
         self.allow_enemies_to_fire()
@@ -252,3 +257,11 @@ class GameWindow(arcade.Window):
 
     def update_player(self):
         self.player.center_x, self.player.center_y = self.state_to_xy(self.agent.state)
+
+    def on_key_press(self, key, modifiers):
+        if key == arcade.key.R:
+            self.agent.reset()
+        elif key == arcade.key.X:
+            self.agent.noise = 1
+            self.agent.reset()
+        self.update_player()

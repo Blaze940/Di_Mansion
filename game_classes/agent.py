@@ -1,10 +1,12 @@
 from game_configs import base_settings
 from random import *
+import pickle
+from os.path import exists
 
 
 class Agent:
 
-    def __init__(self, env, learning_rate=1, discount_factor=0.9):
+    def __init__(self, env, learning_rate=0.8, discount_factor=0.7):
         self.iteration = None
         self.score = None
         self.state = None
@@ -44,11 +46,22 @@ class Agent:
         self.qtable[self.state][action] += delta
         self.state = new_state
 
-        if self.state == self.env.targets:
+        if type_of_shoot == "KILL_ENEMY":
             self.history.append(self.score)
             self.noise *= 1 - 1E-1
         print("ACTION", action)
         return action
+
+    def load(self, filename):
+        if exists(filename):
+            with open(filename, 'rb') as file:
+                self.qtable = pickle.load(file)
+            self.reset()
+
+    def save(self, filename):
+        with open(filename, 'wb') as file:
+            pickle.dump(self.qtable, file)
+
 
 def arg_max(table):
     return max(table, key=table.get)

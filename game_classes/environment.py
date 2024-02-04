@@ -27,22 +27,29 @@ class Environment:
     def do(self, state, action, type_of_shoot):
         move = base_settings.MOVES[action]
         new_state = (state[0] + move[0], state[1] + move[1])
+        reward = 0
+        if type_of_shoot == "ENEMIES_MOVE_DOWN":
+            reward = reward + base_settings.REWARD_ENEMIES_GO_DOWN
+            print("DOWN")
+
         if self.is_not_allowed(new_state):
             reward = base_settings.REWARD_WALL
-        else:
+        elif not self.is_not_allowed(new_state):
             state = new_state
-            reward = -100
+            reward = reward + base_settings.REWARD_MOVE_AROUND
+        elif type_of_shoot == "DIED":
+            reward = reward + base_settings.REWARD_LIFE_LOST
 
         if action == "S":
-            if type_of_shoot == "KILL":
+            reward = reward + base_settings.REWARD_SHOOT
+            if type_of_shoot == "KILL_ENEMY":
                 state = new_state
-                reward = base_settings.REWARD_ENEMY_KILLED
-            if type_of_shoot == "PROTECTION":
+                reward = reward + base_settings.REWARD_ENEMY_KILLED
+            if type_of_shoot == "SHOOT_PROTECTION":
                 state = new_state
-                reward = base_settings.REWARD_PROTECTION_TOUCHED
+                reward = reward + base_settings.REWARD_PROTECTION_TOUCHED
 
         return state, reward
 
     def is_not_allowed(self, state):
         return state not in self.map or self.map[state] == base_settings.MAP_WALL
-
