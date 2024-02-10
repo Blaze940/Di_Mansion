@@ -183,6 +183,7 @@ class GameWindow(arcade.Window):
             # If the bullet falls off the screen get rid of it
             if bullet.top < 0:
                 bullet.remove_from_sprite_lists()
+                #self.enemies_bullets.remove(bullet)
 
     def player_shoot(self):
         if len(self.player_bullets) < MAX_PLAYER_BULLETS:
@@ -241,13 +242,13 @@ class GameWindow(arcade.Window):
     def on_update(self, delta_time):
         """ Movement and game logic """
         self.EVENT = ""
-        action = self.agent.do("")
+        action = self.agent.do("", self.enemies_bullets, self.enemies)
         if self.EVENT in ["DIED", "ENEMIES_MOVE_DOWN"]:
-            self.agent.do(self.EVENT)
+            self.agent.do(self.EVENT, self.enemies_bullets, self.enemies)
 
         if action == "S":
             self.player_shoot()
-            self.agent.do(self.EVENT)
+            self.agent.do(self.EVENT, self.enemies_bullets, self.enemies)
 
         self.update_enemies()
         self.allow_enemies_to_fire()
@@ -256,7 +257,7 @@ class GameWindow(arcade.Window):
         self.update_player()
 
     def update_player(self):
-        self.player.center_x, self.player.center_y = self.state_to_xy(self.agent.state)
+        self.player.center_x, self.player.center_y = self.state_to_xy(self.agent.position)
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.R:
