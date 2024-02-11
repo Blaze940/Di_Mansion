@@ -28,7 +28,7 @@ class Agent:
         else:
             return arg_max(self.qtable[self.state])
 
-    def do(self, type_of_shoot, bullets, enemies):
+    def do(self, type_of_shoot, bullets, enemies, level_finished):
         action = self.best_action()
         new_state, position, reward = self.env.do(self.position, action, type_of_shoot, bullets, enemies)
         self.score += reward
@@ -42,7 +42,7 @@ class Agent:
         self.qtable[self.state][action] += delta
         self.state = new_state
 
-        if type_of_shoot == "KILL_ENEMY":
+        if level_finished:
             self.history.append(self.score)
             self.noise *= 1 - 1E-1
         print("ACTION", action)

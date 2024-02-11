@@ -26,8 +26,8 @@ class Environment:
 
     def get_radar(self, state, bullets, enemies):
         row, col = state[0], state[1]
-        radar_for_bullets = [(row-1,col-1), (row-1,col), (row -1,col+1)]
-        radar_for_enemies = [(row-6,col-1), (row-6,col), (row-1,col+1)]
+        radar_for_bullets = [(row-1,col-1), (row-1,col), (row -1,col+1), (row, col-1), (row, col+1)]
+        radar_for_enemies = [(row-6,col-1), (row-6,col), (row-6,col+1)]
         radar = []
         for n in radar_for_bullets:
             if n in bullets:
@@ -36,6 +36,8 @@ class Environment:
         for n in radar_for_enemies:
             if n in enemies:
                 radar.append("-")
+
+        #print("radar enemies = ",radar_for_enemies, "enemies = ", enemies)
 
         return tuple(radar)
 
