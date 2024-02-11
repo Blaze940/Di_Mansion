@@ -37,38 +37,39 @@ class Environment:
             if n in enemies:
                 radar.append("-")
 
-        #print("radar enemies = ",radar_for_enemies, "enemies = ", enemies)
-
-        return tuple(radar)
+        return tuple(radar) + (row,col)
 
     def do(self, state, action, type_of_shoot, bullets, enemies):
         move = base_settings.MOVES[action]
         new_state = (state[0] + move[0], state[1] + move[1])
         reward = 0
         if type_of_shoot == "ENEMIES_MOVE_DOWN":
-            reward = base_settings.REWARD_ENEMIES_GO_DOWN
+            reward += base_settings.REWARD_ENEMIES_GO_DOWN
 
         if self.is_not_allowed(new_state):
-            reward = base_settings.REWARD_WALL
+            reward += base_settings.REWARD_WALL
         elif not self.is_not_allowed(new_state):
             state = new_state
-            reward = base_settings.REWARD_MOVE_AROUND
+            reward += base_settings.REWARD_MOVE_AROUND
         elif new_state in bullets:
-            reward = base_settings.REWARD_LIFE_LOST
+            reward += base_settings.REWARD_LIFE_LOST
 
         if type_of_shoot == "DIED":
-            reward = base_settings.REWARD_LIFE_LOST
+            reward += base_settings.REWARD_LIFE_LOST
+
+        if type_of_shoot == "ENEMIES_GOT_DOWN":
+            reward += base_settings.REWARD_STAGE_LOST
 
         if action == "S":
-            reward = base_settings.REWARD_SHOOT
+            reward += base_settings.REWARD_SHOOT
             if type_of_shoot == "KILL_ENEMY":
                 state = new_state
-                reward = base_settings.REWARD_ENEMY_KILLED
+                reward += base_settings.REWARD_ENEMY_KILLED
             if type_of_shoot == "SHOOT_PROTECTION":
                 state = new_state
-                reward = base_settings.REWARD_PROTECTION_TOUCHED
+                reward += base_settings.REWARD_PROTECTION_TOUCHED
 
-        print("env state = ", state)
+        #print("env state = ", state)
         return self.get_radar(state, bullets, enemies), state, reward
 
     def is_not_allowed(self, state):

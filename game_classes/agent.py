@@ -6,7 +6,7 @@ from os.path import exists
 
 class Agent:
 
-    def __init__(self, env, learning_rate=1, discount_factor=0.9):
+    def __init__(self, env, learning_rate=1, discount_factor=0.5):
         self.env = env
         self.reset()
         self.qtable = {}
@@ -42,10 +42,6 @@ class Agent:
         self.qtable[self.state][action] += delta
         self.state = new_state
 
-        if level_finished:
-            self.history.append(self.score)
-            self.noise *= 1 - 1E-1
-        print("ACTION", action)
         return action
 
     def load(self, filename):

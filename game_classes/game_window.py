@@ -25,6 +25,8 @@ class GameWindow(arcade.Window):
     def __init__(self, agent):
         super().__init__(base_settings.GAME_WINDOW_WIDTH * base_settings.SPRITE_SIZE,
                          base_settings.GAME_WINDOW_HEIGHT * base_settings.SPRITE_SIZE, base_settings.GAME_NAME)
+        self.enemies_bullets_coords = None
+        self.enemies_coords = None
         self.enemies = None
         self.enemies_bullets = None
         self.protections = None
@@ -128,11 +130,20 @@ class GameWindow(arcade.Window):
             if enemy.right > RIGHT_ENEMY_BORDER and self.enemy_change_x > 0:
                 self.enemy_change_x *= -1
                 move_down = True
-                self.EVENT = "ENEMIES_MOVE_DOWN"
+                self.agent.do("ENEMIES_MOVE_DOWN", self.enemies_bullets_coords, self.enemies_coords, self.level_finished)
             if enemy.left < LEFT_ENEMY_BORDER and self.enemy_change_x < 0:
                 self.enemy_change_x *= -1
                 move_down = True
-                self.EVENT = "ENEMIES_MOVE_DOWN"
+                self.agent.do("ENEMIES_MOVE_DOWN", self.enemies_bullets_coords, self.enemies_coords,
+                              self.level_finished)
+            if enemy.bottom <= base_settings.SPRITE_SIZE:
+                self.agent.do("ENEMIES_GOT_DOWN", self.enemies_bullets_coords, self.enemies_coords,
+                              self.level_finished)
+                self.game_state = GAME_OVER
+                self.agent.history.append(self.agent.score)
+                self.agent.reset()
+                self.setup_level_one()
+                break
 
         # Did we hit the edge above, and need to move t he enemy down?
         if move_down:
@@ -196,6 +207,7 @@ class GameWindow(arcade.Window):
 
             # See if the player got hit with a bullet
             if arcade.check_for_collision_with_list(self.player, self.enemies_bullets):
+                self.agent.do("DIED", self.enemies_bullets_coords, self.enemies_coords, self.level_finished)
                 self.game_state = GAME_OVER
                 self.EVENT = "DIED"
             # If the bullet falls off the screen get rid of it
@@ -237,6 +249,7 @@ class GameWindow(arcade.Window):
                 bullet.remove_from_sprite_lists()
                 for shield in hit_list:
                     shield.remove_from_sprite_lists()
+                    self.agent.do("SHOOT_PROTECTION", self.enemies_bullets_coords, self.enemies_coords, self.level_finished)
                     self.EVENT = "SHOOT_PROTECTION"
                 continue
 
@@ -246,6 +259,7 @@ class GameWindow(arcade.Window):
             # If it did, get rid of the bullet
             if len(hit_list) > 0:
                 bullet.remove_from_sprite_lists()
+                self.agent.do("KILL_ENEMY", self.enemies_bullets_coords, self.enemies_coords, self.level_finished)
                 self.EVENT = "KILL_ENEMY"
 
             # For every enemy we hit, add to the score and remove the enemy
@@ -259,25 +273,23 @@ class GameWindow(arcade.Window):
 
     def on_update(self, delta_time):
         """ Movement and game logic """
-        enemies_bullets = [
+        self.enemies_bullets_coords = [
             (int(sprite.center_x / base_settings.SPRITE_SIZE), int(sprite.center_y / base_settings.SPRITE_SIZE)) for
             sprite in self.enemies_bullets]
-        enemies = [
+        self.enemies_coords = [
             (int(sprite.center_x / base_settings.SPRITE_SIZE), int(sprite.center_y / base_settings.SPRITE_SIZE)) for
             sprite in self.enemies]
-        print(enemies_bullets)
-        self.EVENT = ""
-        action = self.agent.do("", enemies_bullets, enemies, self.level_finished)
-        if self.EVENT in ["DIED", "ENEMIES_MOVE_DOWN"]:
-            self.agent.do(self.EVENT, enemies_bullets, enemies, self.level_finished)
 
+        action = self.agent.do("", self.enemies_bullets_coords, self.enemies_coords, self.level_finished)
         if action == "S":
             self.player_shoot()
-            self.agent.do(self.EVENT, enemies_bullets, enemies, self.level_finished)
 
         if len(self.enemies) == 0:
             self.level_finished = True
-            #self.setup_level_one()
+            self.agent.history.append(self.agent.score)
+            self.agent.reset()
+            self.setup_level_one()
+
 
 
         self.update_enemies()
