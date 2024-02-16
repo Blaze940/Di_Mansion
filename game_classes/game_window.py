@@ -2,8 +2,8 @@ import arcade
 from game_configs import base_settings
 import random
 
-BULLET_SPEED = 23
-ENEMY_SPEED = 23
+BULLET_SPEED = 7
+ENEMY_SPEED = 3
 
 MAX_PLAYER_BULLETS = 2
 

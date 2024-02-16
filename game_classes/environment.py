@@ -25,14 +25,9 @@ class Environment:
         self.width = len(line)
 
     def get_radar(self, state, bullets, enemies):
-
-        if bullets:
-            print("Bullet = ", bullets[0])
-
-        max_row = get_row_of_first_line_enemies(enemies)
         row, col = state[0], state[1]
         radar_for_bullets = [(row-1,col-1), (row-1,col), (row -1,col+1)]
-        radar_for_enemies = [(max_row,col-1), (max_row,col), (max_row,col+1)]
+        radar_for_enemies = [get_lowest_enemy_on_the_given_col(enemies, col-1), get_lowest_enemy_on_the_given_col(enemies, col), get_lowest_enemy_on_the_given_col(enemies, col+1)]
         radar = []
         radar_goal_bullets = [0] * 3
         radar_goal_enemies = [0] * 3
@@ -47,8 +42,8 @@ class Environment:
                 radar.append("-")
                 radar_goal_enemies[i] = 1
 
-        print(tuple(radar) + (row,col) + tuple(radar_goal_bullets) + tuple(radar_goal_enemies))
-        return tuple(radar) + (row,col) + tuple(radar_goal_bullets) + tuple(radar_goal_enemies)
+        print(tuple(radar) + (row, col) + tuple(radar_goal_bullets) + tuple(radar_goal_enemies))
+        return tuple(radar) + (row, col) + tuple(radar_goal_bullets) + tuple(radar_goal_enemies)
 
     def do(self, state, action, type_of_shoot, bullets, enemies):
         bullets = swap_coordinates(bullets)
@@ -57,7 +52,8 @@ class Environment:
         new_state = (state[0] + move[0], state[1] + move[1])
         reward = 0
         if type_of_shoot == "ENEMIES_MOVE_DOWN":
-            reward += base_settings.REWARD_ENEMIES_GO_DOWN
+
+            reward += base_settings.REWARD_ENEMIES_GO_DOWN * len(enemies)
 
         if self.is_not_allowed(new_state):
             reward += base_settings.REWARD_WALL
@@ -93,12 +89,14 @@ class Environment:
 def sign(x):
     return 1 if x > 0 else -1 if x < 0 else 0
 
-def get_row_of_first_line_enemies(coords):
-    if not coords:
-        return None
+def get_lowest_enemy_on_the_given_col(enemies, col):
+    max_enemy = None
 
-    max_y = max(coord[0] for coord in coords)
-    return max_y
+    for x, y in enemies:
+        if y == col and (max_enemy is None or x > max_enemy[0]):
+            max_enemy = (x, y)
+
+    return max_enemy
 
 def swap_coordinates(coords):
     modified_coords = [(base_settings.MAP_DIMENSION[0] - coord[1], coord[0]) for coord in coords]
