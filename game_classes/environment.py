@@ -25,21 +25,34 @@ class Environment:
         self.width = len(line)
 
     def get_radar(self, state, bullets, enemies):
+
+        if bullets:
+            print("Bullet = ", bullets[0])
+
+        max_row = get_row_of_first_line_enemies(enemies)
         row, col = state[0], state[1]
-        radar_for_bullets = [(row-1,col-1), (row-1,col), (row -1,col+1), (row, col-1), (row, col+1)]
-        radar_for_enemies = [(row-6,col-1), (row-6,col), (row-6,col+1)]
+        radar_for_bullets = [(row-1,col-1), (row-1,col), (row -1,col+1)]
+        radar_for_enemies = [(max_row,col-1), (max_row,col), (max_row,col+1)]
         radar = []
-        for n in radar_for_bullets:
+        radar_goal_bullets = [0] * 3
+        radar_goal_enemies = [0] * 3
+
+        for i, n in enumerate(radar_for_bullets):
             if n in bullets:
                 radar.append("!")
+                radar_goal_bullets[i] = 1
 
-        for n in radar_for_enemies:
+        for i, n in enumerate(radar_for_enemies):
             if n in enemies:
                 radar.append("-")
+                radar_goal_enemies[i] = 1
 
-        return tuple(radar) + (row,col)
+        print(tuple(radar) + (row,col) + tuple(radar_goal_bullets) + tuple(radar_goal_enemies))
+        return tuple(radar) + (row,col) + tuple(radar_goal_bullets) + tuple(radar_goal_enemies)
 
     def do(self, state, action, type_of_shoot, bullets, enemies):
+        bullets = swap_coordinates(bullets)
+        enemies = swap_coordinates(enemies)
         move = base_settings.MOVES[action]
         new_state = (state[0] + move[0], state[1] + move[1])
         reward = 0
@@ -79,3 +92,14 @@ class Environment:
 
 def sign(x):
     return 1 if x > 0 else -1 if x < 0 else 0
+
+def get_row_of_first_line_enemies(coords):
+    if not coords:
+        return None
+
+    max_y = max(coord[0] for coord in coords)
+    return max_y
+
+def swap_coordinates(coords):
+    modified_coords = [(base_settings.MAP_DIMENSION[0] - coord[1], coord[0]) for coord in coords]
+    return modified_coords
